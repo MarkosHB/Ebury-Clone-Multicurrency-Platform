@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Client, Currency, Account, AccountCurrency, CurrencyConversion
+from .models import Client, Currency, Account, AccountCurrency, CurrencyConversion, Transaction
 
 
 @admin.register(Client)
@@ -35,3 +35,10 @@ class AccountAdmin(admin.ModelAdmin):
     list_filter = ('created_at', 'paused_since')
     search_fields = ('iban', 'swift', 'client__name')
     inlines = [AccountCurrencyInline]
+
+
+@admin.register(Transaction)
+class TransactionAdmin(admin.ModelAdmin):
+    list_display = ('account', 'from_currency', 'to_currency', 'amount', 'timestamp')
+    readonly_fields = ('converted_amount',)
+   

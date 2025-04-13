@@ -1,7 +1,9 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import Account
+from .models import Account, CurrencyConversion
+from .forms import CurrencyConversionForm
 
 
 def user_login(request):
@@ -40,3 +42,38 @@ def homepage(request):
         messages.error(request, "This client does not have an open account.")
 
     return render(request, "homepage.html", {"client": client, "account": account})
+
+
+@login_required
+def transactions(request, account):
+    account = get_object_or_404(Account, id=account.id, client=request.user.client)
+    converted_amount = None
+
+    if request.method == "POST":
+        form = CurrencyConversionForm(account, request.POST)
+        if form.is_valid():
+            from_currency = form.cleaned_data['from_currency']
+            to_currency = form.cleaned_data['to_currency']
+            amount = form.cleaned_data['amount']
+
+            try:
+                # Fetch the conversion rate
+                conversion = CurrencyConversion.objects.get(
+                    from_currency=from_currency,
+                    to_currency=to_currency
+                )
+                converted_amount = conversion.convert(amount)
+                messages.success(
+                    request,
+                    f"{amount} {from_currency.code} = {converted_amount:.2f} {to_currency.code}"
+                )
+            except CurrencyConversion.DoesNotExist:
+                messages.error(request, f"No conversion rate found for {from_currency.code} to {to_currency.code}")
+    else:
+        form = CurrencyConversionForm(account)
+
+    return render(request, "currency_conversion.html", {
+        "account": account,
+        "form": form,
+        "converted_amount": converted_amount
+    })
