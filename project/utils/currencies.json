@@ -1,0 +1,23 @@
+{
+  "USD": {
+    "Name": "United States Dollar",
+    "Conversions": {
+      "EUR": 0.92,
+      "GBP": 0.81
+    }
+  },
+  "EUR": {
+    "Name": "Euro",
+    "Conversions": {
+      "USD": 1.09,
+      "GBP": 0.88
+    }
+  },
+  "GBP": {
+    "Name": "British Pound Sterling",
+    "Conversions": {
+      "USD": 1.24,
+      "EUR": 1.14
+    }
+  }
+}
