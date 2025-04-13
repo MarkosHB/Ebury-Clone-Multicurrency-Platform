@@ -39,4 +39,4 @@ def homepage(request):
     except Account.DoesNotExist:
         messages.error(request, "This client does not have an open account.")
 
-    return render(request, "homepage.html", {"account": account})
+    return render(request, "homepage.html", {"client": client, "account": account})
