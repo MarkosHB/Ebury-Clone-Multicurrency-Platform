@@ -30,7 +30,7 @@ Take a look at more [images](images/) of the admin site.
 
 ---
 
-## Setup Instructions
+### Setup Instructions
 
 1. Clone the repository:
    ```bash
