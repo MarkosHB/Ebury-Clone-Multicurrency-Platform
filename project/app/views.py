@@ -1,7 +1,14 @@
+import json
+from decimal import Decimal
+
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
-from .models import Account
+from django.http import JsonResponse
+
+from .models import Account, CurrencyConversion, Transaction
 
 
 def user_login(request):
@@ -40,3 +47,47 @@ def homepage(request):
         messages.error(request, "This client does not have an open account.")
 
     return render(request, "homepage.html", {"client": client, "account": account})
+
+
+@csrf_exempt
+@login_required
+def transactions(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            from_currency_code = data.get("from_currency")
+            to_currency_code = data.get("to_currency")
+
+            # Convert amount to Decimal to ensure compatibility with conversion rate
+            amount = Decimal(data.get("amount"))
+
+            # Fetch the account for the logged-in user
+            account = Account.objects.get(client=request.user.client)
+
+            # Fetch the conversion rate
+            conversion = CurrencyConversion.objects.get(
+                from_currency__code=from_currency_code,
+                to_currency__code=to_currency_code
+            )
+
+            # Perform the conversion and create a transaction
+            converted_amount = amount * conversion.rate
+            transaction = Transaction.objects.create(
+                account=account,
+                from_currency=conversion.from_currency,
+                to_currency=conversion.to_currency,
+                amount=amount,
+                converted_amount=converted_amount
+            )
+
+            return JsonResponse({
+                "success": True,
+                "converted_amount": round(transaction.converted_amount, 2),
+                "to_currency": to_currency_code
+            })
+        except CurrencyConversion.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Conversion rate not found."})
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)})
+
+    return JsonResponse({"success": False, "error": "Invalid request method."})

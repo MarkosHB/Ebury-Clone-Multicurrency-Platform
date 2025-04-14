@@ -2,22 +2,46 @@
   "USD": {
     "Name": "United States Dollar",
     "Conversions": {
-      "EUR": 0.92,
-      "GBP": 0.81
+      "EUR": 0.93,
+      "GBP": 0.82,
+      "JPY": 148.50,
+      "AUD": 1.56
     }
   },
   "EUR": {
     "Name": "Euro",
     "Conversions": {
-      "USD": 1.09,
-      "GBP": 0.88
+      "USD": 1.08,
+      "GBP": 0.88,
+      "JPY": 159.50,
+      "AUD": 1.68
     }
   },
   "GBP": {
     "Name": "British Pound Sterling",
     "Conversions": {
-      "USD": 1.24,
-      "EUR": 1.14
+      "USD": 1.22,
+      "EUR": 1.14,
+      "JPY": 181.20,
+      "AUD": 1.91
+    }
+  },
+  "JPY": {
+    "Name": "Japanese Yen",
+    "Conversions": {
+      "USD": 0.0067,
+      "EUR": 0.0063,
+      "GBP": 0.0055,
+      "AUD": 0.0105
+    }
+  },
+  "AUD": {
+    "Name": "Australian Dollar",
+    "Conversions": {
+      "USD": 0.64,
+      "EUR": 0.59,
+      "GBP": 0.52,
+      "JPY": 95.20
     }
   }
 }
