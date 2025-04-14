@@ -1,9 +1,14 @@
-from django.shortcuts import render, redirect, get_object_or_404
+import json
+from decimal import Decimal
+
+from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
-from .models import Account, CurrencyConversion
-from .forms import CurrencyConversionForm
+from django.http import JsonResponse
+
+from .models import Account, CurrencyConversion, Transaction
 
 
 def user_login(request):
@@ -44,36 +49,45 @@ def homepage(request):
     return render(request, "homepage.html", {"client": client, "account": account})
 
 
+@csrf_exempt
 @login_required
-def transactions(request, account):
-    account = get_object_or_404(Account, id=account.id, client=request.user.client)
-    converted_amount = None
-
+def transactions(request):
     if request.method == "POST":
-        form = CurrencyConversionForm(account, request.POST)
-        if form.is_valid():
-            from_currency = form.cleaned_data['from_currency']
-            to_currency = form.cleaned_data['to_currency']
-            amount = form.cleaned_data['amount']
+        try:
+            data = json.loads(request.body)
+            from_currency_code = data.get("from_currency")
+            to_currency_code = data.get("to_currency")
 
-            try:
-                # Fetch the conversion rate
-                conversion = CurrencyConversion.objects.get(
-                    from_currency=from_currency,
-                    to_currency=to_currency
-                )
-                converted_amount = conversion.convert(amount)
-                messages.success(
-                    request,
-                    f"{amount} {from_currency.code} = {converted_amount:.2f} {to_currency.code}"
-                )
-            except CurrencyConversion.DoesNotExist:
-                messages.error(request, f"No conversion rate found for {from_currency.code} to {to_currency.code}")
-    else:
-        form = CurrencyConversionForm(account)
+            # Convert amount to Decimal to ensure compatibility with conversion rate
+            amount = Decimal(data.get("amount"))
 
-    return render(request, "currency_conversion.html", {
-        "account": account,
-        "form": form,
-        "converted_amount": converted_amount
-    })
+            # Fetch the account for the logged-in user
+            account = Account.objects.get(client=request.user.client)
+
+            # Fetch the conversion rate
+            conversion = CurrencyConversion.objects.get(
+                from_currency__code=from_currency_code,
+                to_currency__code=to_currency_code
+            )
+
+            # Perform the conversion and create a transaction
+            converted_amount = amount * conversion.rate
+            transaction = Transaction.objects.create(
+                account=account,
+                from_currency=conversion.from_currency,
+                to_currency=conversion.to_currency,
+                amount=amount,
+                converted_amount=converted_amount
+            )
+
+            return JsonResponse({
+                "success": True,
+                "converted_amount": round(transaction.converted_amount, 2),
+                "to_currency": to_currency_code
+            })
+        except CurrencyConversion.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Conversion rate not found."})
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)})
+
+    return JsonResponse({"success": False, "error": "Invalid request method."})
